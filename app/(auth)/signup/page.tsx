@@ -1,19 +1,19 @@
-'use client';
+"use client";
 
-import { useState, FormEvent } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useState, FormEvent } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
   const router = useRouter();
 
   // بيانات النموذج
-  const [fullName, setFullName] = useState('');
-  const [nationalId, setNationalId] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [fullName, setFullName] = useState("");
+  const [nationalId, setNationalId] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   // خيارات الرؤية والشروط
   const [showPassword, setShowPassword] = useState(false);
@@ -31,33 +31,33 @@ export default function RegisterPage() {
     setError(null);
 
     // التحقق من صحة المدخلات
-    if (!fullName.trim() || fullName.trim().split(' ').length < 3) {
-      setError('يرجى إدخال الاسم الثلاثي على الأقل');
+    if (!fullName.trim() || fullName.trim().split(" ").length < 3) {
+      setError("يرجى إدخال الاسم الثلاثي على الأقل");
       return;
     }
 
     if (!nationalId || nationalId.length < 10) {
-      setError('الرقم الوطني يجب أن يتكون من 10 أرقام على الأقل');
+      setError("الرقم الوطني يجب أن يتكون من 10 أرقام على الأقل");
       return;
     }
 
     if (!phoneNumber || phoneNumber.length < 9) {
-      setError('يرجى إدخال رقم هاتف محمول صحيح');
+      setError("يرجى إدخال رقم هاتف محمول صحيح");
       return;
     }
 
     if (password.length < 8) {
-      setError('كلمة المرور يجب أن لا تقل عن 8 خانات');
+      setError("كلمة المرور يجب أن لا تقل عن 8 خانات");
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('كلمتا المرور غير متطابقتين');
+      setError("كلمتا المرور غير متطابقتين");
       return;
     }
 
     if (!agreeTerms) {
-      setError('يجب الموافقة على الشروط والأحكام وسياسة الخصوصية');
+      setError("يجب الموافقة على الشروط والأحكام وسياسة الخصوصية");
       return;
     }
 
@@ -65,9 +65,9 @@ export default function RegisterPage() {
 
     try {
       // إرسال طلب إنشاء الحساب إلى خادم API (Next.js / Django)
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           full_name: fullName,
           national_id: nationalId,
@@ -80,19 +80,19 @@ export default function RegisterPage() {
       // محاكاة استجابة الخادم في حال عدم ضبط الـ API بعد
       if (!response.ok && response.status !== 404) {
         const data = await response.json();
-        throw new Error(data.message || 'حدث خطأ أثناء إنشاء الحساب');
+        throw new Error(data.message || "حدث خطأ أثناء إنشاء الحساب");
       }
 
       // إظهار رسالة النجاح والتوجيه لتسجيل الدخول
       setSuccess(true);
       setTimeout(() => {
-        router.push('/login');
+        router.push("/login");
       }, 2000);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('تعذر إنشاء الحساب حالياً، يرجى المحاولة لاحقاً');
+        setError("تعذر إنشاء الحساب حالياً، يرجى المحاولة لاحقاً");
       }
     } finally {
       setIsLoading(false);
@@ -104,8 +104,18 @@ export default function RegisterPage() {
       {/* الترويسة والشعار الحكومي */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-700 text-white shadow-lg shadow-emerald-700/20 mb-4">
-          <svg className="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.5M4.5 21V10.5M12 3v6" />
+          <svg
+            className="w-9 h-9"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.8}
+              d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.5M4.5 21V10.5M12 3v6"
+            />
           </svg>
         </div>
         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
@@ -119,33 +129,54 @@ export default function RegisterPage() {
       {/* بطاقة نموذج التسجيل */}
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-lg">
         <div className="bg-white py-8 px-6 shadow-xl shadow-slate-200/60 rounded-2xl border border-slate-100 sm:px-10">
-          
           {/* تنبيه النجاح */}
           {success && (
             <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center gap-3 text-emerald-800 text-sm">
-              <svg className="w-5 h-5 shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-5 h-5 shrink-0 text-emerald-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
-              <span>تم إنشاء حسابك بنجاح! جاري تحويلك لصفحة تسجيل الدخول...</span>
+              <span>
+                تم إنشاء حسابك بنجاح! جاري تحويلك لصفحة تسجيل الدخول...
+              </span>
             </div>
           )}
 
           {/* تنبيه الأخطاء */}
           {error && (
             <div className="mb-6 p-3.5 rounded-xl bg-red-50 border border-red-100 flex items-start gap-3 text-red-700 text-sm">
-              <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              <svg
+                className="w-5 h-5 shrink-0 mt-0.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
               </svg>
               <span>{error}</span>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            
             {/* الاسم الكامل */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
-                الاسم الكامل (كما في الهوية) <span className="text-red-500">*</span>
+                الاسم الكامل (كما في الهوية){" "}
+                <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -168,7 +199,9 @@ export default function RegisterPage() {
                   required
                   maxLength={12}
                   value={nationalId}
-                  onChange={(e) => setNationalId(e.target.value.replace(/\D/g, ''))}
+                  onChange={(e) =>
+                    setNationalId(e.target.value.replace(/\D/g, ""))
+                  }
                   placeholder="10 أرقام"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 text-sm transition-all"
                 />
@@ -192,7 +225,8 @@ export default function RegisterPage() {
             {/* البريد الإلكتروني (اختياري) */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
-                البريد الإلكتروني <span className="text-slate-400 font-normal">(اختياري)</span>
+                البريد الإلكتروني{" "}
+                <span className="text-slate-400 font-normal">(اختياري)</span>
               </label>
               <input
                 type="email"
@@ -211,7 +245,7 @@ export default function RegisterPage() {
                 </label>
                 <div className="relative">
                   <input
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -223,7 +257,7 @@ export default function RegisterPage() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-medium"
                   >
-                    {showPassword ? 'إخفاء' : 'إظهار'}
+                    {showPassword ? "إخفاء" : "إظهار"}
                   </button>
                 </div>
               </div>
@@ -234,7 +268,7 @@ export default function RegisterPage() {
                 </label>
                 <div className="relative">
                   <input
-                    type={showConfirmPassword ? 'text' : 'password'}
+                    type={showConfirmPassword ? "text" : "password"}
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
@@ -246,7 +280,7 @@ export default function RegisterPage() {
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-medium"
                   >
-                    {showConfirmPassword ? 'إخفاء' : 'إظهار'}
+                    {showConfirmPassword ? "إخفاء" : "إظهار"}
                   </button>
                 </div>
               </div>
@@ -262,14 +296,20 @@ export default function RegisterPage() {
                   className="rounded border-slate-300 text-emerald-700 focus:ring-emerald-600 w-4 h-4 mt-0.5"
                 />
                 <span className="mr-2.5 leading-relaxed">
-                  أوافق على{' '}
-                  <a href="#" className="text-emerald-700 hover:underline font-medium">
+                  أوافق على{" "}
+                  <a
+                    href="#"
+                    className="text-emerald-700 hover:underline font-medium"
+                  >
                     شروط الاستخدام
-                  </a>{' '}
-                  و{' '}
-                  <a href="#" className="text-emerald-700 hover:underline font-medium">
+                  </a>{" "}
+                  و{" "}
+                  <a
+                    href="#"
+                    className="text-emerald-700 hover:underline font-medium"
+                  >
                     سياسة الخصوصية
-                  </a>{' '}
+                  </a>{" "}
                   الخاصة بالخدمات الحكومية الإلكترونية.
                 </span>
               </label>
@@ -291,8 +331,11 @@ export default function RegisterPage() {
           {/* رابط تسجيل الدخول للمستخدمين الحاليين */}
           <div className="mt-6 pt-6 border-t border-slate-100 text-center">
             <p className="text-xs sm:text-sm text-slate-600">
-              لديك حساب بالفعل في المنصة؟{' '}
-              <Link href="/login" className="text-emerald-700 font-semibold hover:underline">
+              لديك حساب بالفعل في المنصة؟{" "}
+              <Link
+                href="/login"
+                className="text-emerald-700 font-semibold hover:underline"
+              >
                 تسجيل الدخول
               </Link>
             </p>
