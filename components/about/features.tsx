@@ -1,5 +1,3 @@
-import React from "react";
-
 const Features = () => {
   return (
     <div>
@@ -48,11 +46,11 @@ const Features = () => {
                 03
               </div>
               <h4 className="font-bold text-slate-900 text-lg mb-2">
-                دفع إلكتروني آمن
+                متوفرة دائماً في الخدمة
               </h4>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                بوابة تسديد موحدة تدعم مختلف وسائل الدفع الإلكتروني مع إصدار
-                فواتير وسندات معتمدة فوراً.
+                متاحة في كل الأوقات حتى عند الاتصال الضعيف بالشبكة للحصول على
+                خدماتك في أي وقت.
               </p>
             </div>
 

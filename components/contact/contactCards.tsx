@@ -134,34 +134,6 @@ const ContactCards = () => {
           </div>
         </div>
 
-        {/* بطاقة الأسئلة الشائعة */}
-        <div className="bg-emerald-900 text-white p-6 rounded-2xl shadow-xl space-y-3 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-32 h-32 bg-emerald-700/30 rounded-full blur-xl pointer-events-none" />
-          <h4 className="font-bold text-base">تبحث عن إجابة سريعة؟</h4>
-          <p className="text-xs text-emerald-100 leading-relaxed">
-            راجع قاعدة المعرفة والأسئلة الشائعة للحصول على إجابات فورية لأبرز
-            الاستفسارات.
-          </p>
-          <Link
-            href="/faq"
-            className="inline-flex items-center gap-2 text-xs font-bold text-emerald-300 hover:text-white transition-colors pt-1"
-          >
-            <span>الانتقال للأسئلة الشائعة</span>
-            <svg
-              className="w-4 h-4 rotate-180"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M14 5l7 7m0 0l-7 7m7-7H3"
-              />
-            </svg>
-          </Link>
-        </div>
       </div>
     </>
   );

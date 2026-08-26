@@ -16,7 +16,7 @@ const Hero = () => {
           </div>
           <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight max-w-4xl mx-auto">
             منصة <span className="text-emerald-400">بوابتي</span> للخدمات
-            الحكومية الموحدة
+            الحكومية السورية
           </h1>
           <p className="mt-6 text-base sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed">
             بوابتك الرقمية الشاملة للوصول إلى كافة المعاملات والخدمات الحكومية
