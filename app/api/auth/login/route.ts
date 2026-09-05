@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 
-const DJANGO_API_URL = process.env.DJANGO_API_URL || 'http://127.0.0.1:8000/api/v1';
+const DJANGO_API_URL = process.env.DJANGO_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://bawbaty.onrender.com';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    // 1. إرسال بيانات الاعتماد إلى خادم Django (SimpleJWT)
-    const djangoResponse = await fetch(`${DJANGO_API_URL}/auth/login/`, {
+    // 1. إرسال بيانات الاعتماد إلى خادم Django المرفوع على Render
+    const djangoResponse = await fetch(`${DJANGO_API_URL}/api/token/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     // في حال وجود خطأ من خادم Django
     if (!djangoResponse.ok) {
       return NextResponse.json(
-        { message: data.detail || data.message || 'بيانات الدخول غير صحيحة' },
+        { message: data.detail || data.error || data.message || 'بيانات الدخول غير صحيحة' },
         { status: djangoResponse.status }
       );
     }
@@ -37,11 +37,11 @@ export async function POST(request: Request) {
 
     // 4. تعيين Access Token في HttpOnly Cookie
     response.cookies.set('access_token', access, {
-      httpOnly: true, // يمنع وصول JavaScript للرمز للحماية من ثغرات XSS
-      secure: process.env.NODE_ENV === 'production', // تفعيل HTTPS في بيئة الإنتاج فقط
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60, // صلاحية لمدة 1 ساعة
+      maxAge: 60 * 60 * 24,
     });
 
     // 5. تعيين Refresh Token في HttpOnly Cookie (إذا توفر)
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
-        maxAge: 7 * 24 * 60 * 60, // صلاحية لمدة 7 أيام
+        maxAge: 7 * 24 * 60 * 60,
       });
     }
 

@@ -1,154 +1,187 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import HeaderEmployee from "@/components/employee/headerEmployee";
 import StatisticsBar from "@/components/employee/statisticsBar";
 import RequestsList from "@/components/employee/requestsList";
 import Request from "@/components/employee/request";
 
-// نموذج للطلبات الواردة للموظف (Digital Front-End / Physical Verification)
-interface PhysicalRequest {
-  id: string;
-  trackingNumber: string;
-  citizenName: string;
-  nationalId: string;
-  serviceTitle: string;
-  submittedAt: string;
-  appointmentTime: string;
-  status:
-    | "PENDING_VERIFICATION"
-    | "APPROVED"
-    | "REJECTED"
-    | "PAYMENT_COMPLETED";
-  documents: { name: string; verified: boolean }[];
-  feeAmount: number;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://bawbaty.onrender.com";
+
+export interface DBRequest {
+  tracking_id: string;
+  citizen_name: string;
+  citizen_national_id: string;
+  service_name: string;
+  service_fees: string;
+  status: "submitted" | "auditing" | "matching" | "closed" | "rejected";
+  status_display: string;
+  payment_status: boolean;
+  receipt_reference: string | null;
+  created_at: string;
 }
 
-const INITIAL_REQUESTS: PhysicalRequest[] = [
-  {
-    id: "1",
-    trackingNumber: "REQ-2026-9081",
-    citizenName: "أحمد عبدالله علي",
-    nationalId: "1092837465",
-    serviceTitle: "تجديد بطاقة الهوية الوطنية",
-    submittedAt: "2026-08-14 09:30",
-    appointmentTime: "اليوم - 10:30 صباحاً",
-    status: "PENDING_VERIFICATION",
-    documents: [
-      { name: "صورة الهوية القديمة", verified: true },
-      { name: "الصورة الشخصية الرسمية", verified: false },
-      { name: "إثبات العنوان السكني", verified: false },
-    ],
-    feeAmount: 50,
-  },
-  {
-    id: "2",
-    trackingNumber: "REQ-2026-9082",
-    citizenName: "سارة محمد العتيبي",
-    nationalId: "1029384756",
-    serviceTitle: "إصدار بدل فاقد رخصة قيادة",
-    submittedAt: "2026-08-14 10:15",
-    appointmentTime: "اليوم - 11:00 صباحاً",
-    status: "PENDING_VERIFICATION",
-    documents: [
-      { name: "محضر إثبات القيد/الفقدان", verified: true },
-      { name: "نتيجة الفحص الطبي الميداني", verified: true },
-    ],
-    feeAmount: 100,
-  },
-  {
-    id: "3",
-    trackingNumber: "REQ-2026-8950",
-    citizenName: "خالد إبراهيم المنصور",
-    nationalId: "1082736451",
-    serviceTitle: "توثيق العقد العقاري المباشر",
-    submittedAt: "2026-08-13 14:00",
-    appointmentTime: "أمس",
-    status: "APPROVED",
-    documents: [
-      { name: "صك الملكية الأصلي", verified: true },
-      { name: "عقد المبيعات اليدوي", verified: true },
-    ],
-    feeAmount: 250,
-  },
-];
-
 export default function OfficerDashboard() {
-  const [requests, setRequests] = useState<PhysicalRequest[]>(INITIAL_REQUESTS);
-  const [selectedRequest, setSelectedRequest] =
-    useState<PhysicalRequest | null>(INITIAL_REQUESTS[0]);
+  const [requests, setRequests] = useState<DBRequest[]>([]);
+  const [selectedRequest, setSelectedRequest] = useState<DBRequest | null>(
+    null,
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const [cashCollected, setCashCollected] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // جلب الطلبات من قاعدة البيانات عبر Render
+  const fetchRequests = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`${API_BASE_URL}/requests/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!res.ok) throw new Error("فشل في جلب الطلبات من قاعدة البيانات");
+
+      const data: DBRequest[] = await res.json();
+      setRequests(data);
+      if (data.length > 0 && !selectedRequest) {
+        setSelectedRequest(data[0]);
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error) setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedRequest]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchRequests();
+  }, [fetchRequests]);
 
   // تصفية الطلبات بواسطة البحث
   const filteredRequests = requests.filter(
     (req) =>
-      req.trackingNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      req.citizenName.includes(searchTerm) ||
-      req.nationalId.includes(searchTerm),
+      req.tracking_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (req.citizen_name && req.citizen_name.includes(searchTerm)) ||
+      (req.citizen_national_id && req.citizen_national_id.includes(searchTerm)),
   );
 
-  // تحديث حالة تدقيق وثيقة معينة
-  const toggleDocVerification = (docIndex: number) => {
+  // تحديث حالة الطلب عبر Render
+  const handleStatusChange = async (newStatus: DBRequest["status"]) => {
     if (!selectedRequest) return;
+    setIsUpdating(true);
 
-    const updatedDocs = [...selectedRequest.documents];
-    updatedDocs[docIndex].verified = !updatedDocs[docIndex].verified;
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(
+        `${API_BASE_URL}/requests/${selectedRequest.tracking_id}/`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status: newStatus,
+          }),
+        },
+      );
 
-    const updatedReq = { ...selectedRequest, documents: updatedDocs };
-    setSelectedRequest(updatedReq);
+      if (!res.ok) throw new Error("تعذر تحديث حالة المعاملة");
 
-    setRequests(requests.map((r) => (r.id === updatedReq.id ? updatedReq : r)));
+      const updatedData: DBRequest = await res.json();
+      setSelectedRequest(updatedData);
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.tracking_id === updatedData.tracking_id ? updatedData : r,
+        ),
+      );
+    } catch (err: unknown) {
+      if (err instanceof Error) alert(err.message);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
-  // اعتماد وتمرير المعاملة (معالجة النقدية والتحقق الميداني)
-  const handleApproveAndCollect = () => {
+  // اعتماد وتحصيل الطلب في قاعدة البيانات على Render
+  const handleApproveAndCollect = async () => {
     if (!selectedRequest) return;
+    setIsUpdating(true);
 
-    const updatedReq: PhysicalRequest = {
-      ...selectedRequest,
-      status: "APPROVED",
-    };
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(
+        `${API_BASE_URL}/requests/${selectedRequest.tracking_id}/`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status: "closed",
+            payment_status: true,
+          }),
+        },
+      );
 
-    setSelectedRequest(updatedReq);
-    setRequests(requests.map((r) => (r.id === updatedReq.id ? updatedReq : r)));
-    setCashCollected(true);
-    setTimeout(() => setCashCollected(false), 3000);
-  };
+      if (!res.ok) throw new Error("تعذر إغلاق المعاملة وتحديث حالة الدفع");
 
-  // رفض المعاملة
-  const handleReject = () => {
-    if (!selectedRequest) return;
+      const updatedData: DBRequest = await res.json();
+      setSelectedRequest(updatedData);
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.tracking_id === updatedData.tracking_id ? updatedData : r,
+        ),
+      );
 
-    const updatedReq: PhysicalRequest = {
-      ...selectedRequest,
-      status: "REJECTED",
-    };
-
-    setSelectedRequest(updatedReq);
-    setRequests(requests.map((r) => (r.id === updatedReq.id ? updatedReq : r)));
+      setCashCollected(true);
+      setTimeout(() => setCashCollected(false), 3000);
+    } catch (err: unknown) {
+      if (err instanceof Error) alert(err.message);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800 dir-rtl flex flex-col">
       <HeaderEmployee />
       <StatisticsBar requests={requests} />
-      {/* 3. جسم لوحة التحكم الرئيسي */}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full grid lg:grid-cols-12 gap-6">
-        <RequestsList
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          setSelectedRequest={setSelectedRequest}
-          filteredRequests={filteredRequests}
-          selectedRequest={selectedRequest}
-        />
-        <Request
-          selectedRequest={selectedRequest}
-          toggleDocVerification={toggleDocVerification}
-          cashCollected={cashCollected}
-          handleReject={handleReject}
-          handleApproveAndCollect={handleApproveAndCollect}
-        />
+        {isLoading ? (
+          <div className="lg:col-span-12 text-center py-20 text-slate-500">
+            جاري تحميل الطلبات من قاعدة البيانات...
+          </div>
+        ) : error ? (
+          <div className="lg:col-span-12 text-center py-20 text-red-600">
+            {error}
+          </div>
+        ) : (
+          <>
+            <RequestsList
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              setSelectedRequest={setSelectedRequest}
+              filteredRequests={filteredRequests}
+              selectedRequest={selectedRequest}
+            />
+            <Request
+              selectedRequest={selectedRequest}
+              cashCollected={cashCollected}
+              isUpdating={isUpdating}
+              handleStatusChange={handleStatusChange}
+              handleApproveAndCollect={handleApproveAndCollect}
+            />
+          </>
+        )}
       </div>
     </div>
   );

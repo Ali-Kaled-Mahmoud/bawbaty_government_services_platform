@@ -4,9 +4,6 @@ import { useState, FormEvent } from "react";
 
 const MessageForm = () => {
   // بيانات نموذج التواصل
-  const [fullName, setFullName] = useState("");
-  const [nationalId, setNationalId] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
   const [category, setCategory] = useState("inquiry");
   const [subject, setSubject] = useState("");
@@ -22,13 +19,8 @@ const MessageForm = () => {
     e.preventDefault();
     setError(null);
 
-    if (!fullName.trim() || !nationalId || !phoneNumber || !message.trim()) {
+    if (!message.trim()) {
       setError("يرجى تعبئة كافة الحقول الأساسية المطلوب إدخالها");
-      return;
-    }
-
-    if (nationalId.length < 10) {
-      setError("الرقم الوطني يجب أن يتكون من 10 أرقام على الأقل");
       return;
     }
 
@@ -40,9 +32,6 @@ const MessageForm = () => {
 
       setSuccess(true);
       // إعادة ضبط الحقول
-      setFullName("");
-      setNationalId("");
-      setPhoneNumber("");
       setEmail("");
       setCategory("inquiry");
       setSubject("");
@@ -93,7 +82,7 @@ const MessageForm = () => {
                   <span className="font-semibold dir-ltr inline-block">
                     #TK-89421
                   </span>{" "}
-                  وسيتواصل معك الفريق عبر الهاتف أو البريد الإلكتروني.
+                  وسيتواصل معك الفريق عبر البريد الإلكتروني.
                 </p>
               </div>
             </div>
@@ -120,66 +109,17 @@ const MessageForm = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* الاسم ورقم الهوية */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* البريد */}
+            <div>
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1.5">
-                  الاسم الكامل <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="أدخل اسمك الثلاثي"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 text-sm transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1.5">
-                  الرقم الوطني / الهوية <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  maxLength={10}
-                  value={nationalId}
-                  onChange={(e) =>
-                    setNationalId(e.target.value.replace(/\D/g, ""))
-                  }
-                  placeholder="أدخل الرقم الوطني"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 text-sm transition-all"
-                />
-              </div>
-            </div>
-
-            {/* الهاتف والبريد */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1.5">
-                  رقم الهاتف المحمول <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  required
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  placeholder="05XXXXXXXX"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 text-sm transition-all text-left dir-ltr"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1.5">
-                  البريد الإلكتروني{" "}
-                  <span className="text-slate-400 font-normal">(اختياري)</span>
+                  البريد الإلكتروني <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
+                  placeholder="example@example.com"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 text-sm transition-all text-left dir-ltr"
                 />
               </div>
@@ -199,16 +139,15 @@ const MessageForm = () => {
                 <option value="technical">
                   مشكلة تقنية في الحساب أو التسجيل
                 </option>
-                <option value="complaint">تقديم شكوى أو ملاحظة</option>
                 <option value="suggestion">اقتراح تطويري للمنصة</option>
+                <option value="complaint">غير ذلك ...</option>
               </select>
             </div>
 
             {/* عنوان الموضوع */}
             <div>
               <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1.5">
-                عنوان الموضوع{" "}
-                <span className="text-slate-400 font-normal">(اختياري)</span>
+                عنوان الموضوع <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"

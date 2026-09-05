@@ -1,246 +1,205 @@
-import React, { useState } from "react";
+"use client";
 
-const Form = ({
-  setIsSubmitted,
-  setBookingReference,
-  visitDate,
-  setVisitDate,
-  selectedTimeSlot,
-  setSelectedTimeSlot,
-  fullName,
-  setFullName,
-}: {
-  setIsSubmitted: (submitted: boolean) => void;
-  setBookingReference: (reference: string) => void;
-  visitDate: string;
-  setVisitDate: (date: string) => void;
-  selectedTimeSlot: string;
-  setSelectedTimeSlot: (slot: string) => void;
-  fullName: string;
-  setFullName: (name: string) => void;
-}) => {
+import React, { useState, useEffect } from "react";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://bawbaty.onrender.com";
+
+interface Department {
+  id: number;
+  name: string;
+  branch_name: string;
+}
+
+interface FormProps {
+  onAppointmentCreated: () => void;
+}
+
+const Form = ({ onAppointmentCreated }: FormProps) => {
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [department, setDepartment] = useState("");
-  const [service, setService] = useState("");
-  const [nationalId, setNationalId] = useState("");
+  const [visitDate, setVisitDate] = useState("");
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
 
-  // المواعيد المتاحة تلقائياً عند اختيار التاريخ
+  const [loadingDepts, setLoadingDepts] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const timeSlots = [
-    "09:00 ص",
-    "10:00 ص",
-    "11:00 ص",
-    "12:00 م",
-    "01:00 م",
-    "02:00 م",
+    { label: "09:00 ص", value: "09:00:00" },
+    { label: "10:00 ص", value: "10:00:00" },
+    { label: "11:00 ص", value: "11:00:00" },
+    { label: "12:00 م", value: "12:00:00" },
+    { label: "01:00 م", value: "13:00:00" },
+    { label: "02:00 م", value: "14:00:00" },
   ];
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!department || !service || !visitDate || !selectedTimeSlot) return;
 
-    // توليد رقم مرجعي عشوائي للموعد
-    const randomRef = `APT-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-    setBookingReference(randomRef);
-    setIsSubmitted(true);
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/departments/`);
+        if (response.ok) {
+          const data = await response.json();
+          setDepartments(data);
+        } else {
+          setErrorMessage("تعذر جلب قائمة الدوائر الحكومية.");
+        }
+      } catch {
+        setErrorMessage("حدث خطأ أثناء الاتصال بالخادم.");
+      } finally {
+        setLoadingDepts(false);
+      }
+    };
+
+    fetchDepartments();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    const token = localStorage.getItem("access_token") || localStorage.getItem("token");
+    if (!token) {
+      setErrorMessage("يرجى تسجيل الدخول لحجز موعد.");
+      return;
+    }
+
+    if (!department || !visitDate || !selectedTimeSlot) {
+      setErrorMessage("يرجى تعبئة جميع الحقول المطلوبة (الدائرة، التاريخ، الوقت).");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const selectedSlotObj = timeSlots.find((s) => s.label === selectedTimeSlot);
+      const appointmentTimeFormatted = selectedSlotObj ? selectedSlotObj.value : "09:00:00";
+
+      const payload = {
+        department: parseInt(department),
+        appointment_date: visitDate,
+        appointment_time: appointmentTimeFormatted,
+      };
+
+      const response = await fetch(`${API_BASE_URL}/appointments/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        setSuccessMessage("تم حجز الموعد بنجاح واضافته إلى جدولك.");
+        setDepartment("");
+        setVisitDate("");
+        setSelectedTimeSlot("");
+        onAppointmentCreated();
+      } else {
+        const errData = await response.json();
+        setErrorMessage(errData.detail || "حدث خطأ أثناء حجز الموعد.");
+      }
+    } catch {
+      setErrorMessage("حدث خطأ في الاتصال بالشبكة.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div>
-      <section
-        id="quick-book"
-        className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200/80"
-      >
-        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
-          <div className="p-2.5 bg-teal-50 rounded-xl text-teal-700">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="lucide lucide-calendar w-6 h-6"
-            >
-              <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
-              <line x1="16" x2="16" y1="2" y2="6" />
-              <line x1="8" x2="8" y1="2" y2="6" />
-              <line x1="3" x2="21" y1="10" y2="10" />
-            </svg>
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-slate-800">
-              بيانات نموذج الحجز
-            </h3>
-            <p className="text-xs text-slate-500">
-              قم بتعبئة التفاصيل التالية لتحديد موعد زيارة المركز الخدمي
-            </p>
+    <section className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80">
+      <h3 className="text-sm font-bold text-slate-800 mb-4 pb-2 border-b border-slate-100">
+        حجز موعد جديد
+      </h3>
+
+      {errorMessage && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-semibold">
+          {errorMessage}
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs font-semibold">
+          {successMessage}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* 1. الدائرة الحكومية */}
+        <div>
+          <label className="block text-xs font-bold text-slate-700 mb-1.5">
+            الدائرة الحكومية <span className="text-red-500">*</span>
+          </label>
+          <select
+            required
+            value={department}
+            disabled={loadingDepts}
+            onChange={(e) => setDepartment(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:ring-2 focus:ring-teal-600/20 focus:border-teal-600 focus:outline-none transition-all disabled:opacity-50"
+          >
+            <option value="">
+              {loadingDepts ? "جاري التحميل..." : "اختر الدائرة الحكومية..."}
+            </option>
+            {departments.map((dept) => (
+              <option key={dept.id} value={dept.id}>
+                {dept.name} - {dept.branch_name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* 2. تاريخ الزيارة */}
+        <div>
+          <label className="block text-xs font-bold text-slate-700 mb-1.5">
+            تاريخ الزيارة <span className="text-red-500">*</span>
+          </label>
+          <input
+            required
+            type="date"
+            value={visitDate}
+            min={new Date().toISOString().split("T")[0]}
+            onChange={(e) => setVisitDate(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:ring-2 focus:ring-teal-600/20 focus:border-teal-600 focus:outline-none transition-all"
+          />
+        </div>
+
+        {/* 3. وقت الزيارة */}
+        <div>
+          <label className="block text-xs font-bold text-slate-700 mb-1.5">
+            وقت الزيارة <span className="text-red-500">*</span>
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            {timeSlots.map((slot) => {
+              const isSelected = selectedTimeSlot === slot.label;
+              return (
+                <button
+                  key={slot.label}
+                  type="button"
+                  onClick={() => setSelectedTimeSlot(slot.label)}
+                  className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all text-center cursor-pointer ${
+                    isSelected
+                      ? "bg-teal-800 border-teal-800 text-white shadow-sm"
+                      : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                  }`}
+                >
+                  {slot.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* قسم اختيار الدائرة والخدمة */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-2">
-                الدائرة الحكومية <span className="text-red-500">*</span>
-              </label>
-              <select
-                required
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-teal-600/20 focus:border-teal-600 focus:outline-none transition-all"
-              >
-                <option value="">اختر الدائرة...</option>
-                <option value="1">الشؤون المدنية</option>
-                <option value="2">مديرية الهجرة والجوازات</option>
-                <option value="3">السجل العقاري والتوثيق</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-2">
-                نوع الخدمة <span className="text-red-500">*</span>
-              </label>
-              <select
-                required
-                value={service}
-                onChange={(e) => setService(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-teal-600/20 focus:border-teal-600 focus:outline-none transition-all"
-              >
-                <option value="">اختر الخدمة...</option>
-                <option value="1">إصدار / تجديد وثيقة</option>
-                <option value="2">مطابقة الأوراق وتصديق المعاملات</option>
-                <option value="3">استلام المخرجات الورقية</option>
-              </select>
-            </div>
-          </div>
-
-          {/* قسم بيانات المراجع الشخصية */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-2">
-                الرقم الوطني / رقم الهوية{" "}
-                <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="10XXXXXXXX"
-                value={nationalId}
-                onChange={(e) => setNationalId(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono dir-ltr text-right focus:ring-2 focus:ring-teal-600/20 focus:border-teal-600 focus:outline-none transition-all"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-2">
-                اسم المراجع الثلاثي
-              </label>
-              <input
-                type="text"
-                placeholder="أدخل الاسم كما هو في الهوية"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-teal-600/20 focus:border-teal-600 focus:outline-none transition-all"
-              />
-            </div>
-          </div>
-
-          {/* قسم اختيار تاريخ ووقت الزيارة */}
-          <div className="space-y-3 pt-2 border-t border-slate-100">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-2">
-                  تاريخ الزيارة <span className="text-red-500">*</span>
-                </label>
-                <input
-                  required
-                  value={visitDate}
-                  onChange={(e) => setVisitDate(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:ring-2 focus:ring-teal-600/20 focus:border-teal-600 focus:outline-none transition-all"
-                  type="date"
-                />
-              </div>
-            </div>
-
-            {/* اختيار الفترة الزمنية (Time Slot Chips) */}
-            {visitDate && (
-              <div className="pt-2 animate-fadeIn">
-                <label className="block text-xs font-bold text-slate-700 mb-2">
-                  اختر الوقت المتاح: <span className="text-red-500">*</span>
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-                  {timeSlots.map((slot) => {
-                    const isSelected = selectedTimeSlot === slot;
-                    return (
-                      <button
-                        key={slot}
-                        type="button"
-                        onClick={() => setSelectedTimeSlot(slot)}
-                        className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all text-center ${
-                          isSelected
-                            ? "bg-teal-800 border-teal-800 text-white shadow-sm"
-                            : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
-                        }`}
-                      >
-                        {slot}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* زر التأكيد ورسائل الإرشاد */}
-          <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
-              <svg
-                className="w-4 h-4 text-amber-500 shrink-0"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              يرجى الحضور قبل الموعد بـ 15 دقيقة مصحوباً بالوثائق الأصلية.
-            </p>
-
-            <button
-              type="submit"
-              disabled={
-                !department || !service || !visitDate || !selectedTimeSlot
-              }
-              className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold py-3 px-8 rounded-xl shadow transition flex items-center justify-center gap-2 text-xs sm:text-sm"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="lucide lucide-check-circle2 w-4 h-4"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <path d="m9 12 2 2 4-4" />
-              </svg>
-              تأكيد الحجز الفوري
-            </button>
-          </div>
-        </form>
-      </section>
-    </div>
+        <button
+          type="submit"
+          disabled={!department || !visitDate || !selectedTimeSlot || isSubmitting}
+          className="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold py-3 px-4 rounded-xl text-xs shadow transition cursor-pointer mt-2"
+        >
+          {isSubmitting ? "جاري تأكيد الحجز..." : "تأكيد حجز الموعد"}
+        </button>
+      </form>
+    </section>
   );
 };
 

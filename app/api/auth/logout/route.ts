@@ -9,6 +9,9 @@ export async function POST() {
   // حذف ملفات التعريف بضبط تاريخ انتهاء الصلاحية
   response.cookies.delete('access_token');
   response.cookies.delete('refresh_token');
+  response.cookies.delete('token');
+  response.cookies.delete('user_info');
+  response.cookies.delete('user_role');
 
   return response;
 }

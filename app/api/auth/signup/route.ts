@@ -1,7 +1,7 @@
 // src/app/api/auth/register/route.ts
 import { NextResponse } from 'next/server';
 
-const DJANGO_API_URL = process.env.DJANGO_API_URL || 'http://127.0.0.1:8000/api/v1';
+const DJANGO_API_URL = process.env.DJANGO_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://bawbaty.onrender.com';
 
 export async function POST(request: Request) {
   try {
@@ -16,8 +16,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. إرسال طلب إنشاء الحساب إلى خادم Django
-    const djangoResponse = await fetch(`${DJANGO_API_URL}/auth/register/`, {
+    // 2. إرسال طلب إنشاء الحساب إلى خادم Django على Render
+    const djangoResponse = await fetch(`${DJANGO_API_URL}/api/register/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
 
     const data = await djangoResponse.json();
 
-    // 3. معالجة وتنسيق الأخطاء القادمة من Django (مثل التكرار أو أخطاء التنسيق)
+    // 3. معالجة وتنسيق الأخطاء القادمة من Django
     if (!djangoResponse.ok) {
       let errorMessage = 'فشل إنشاء الحساب، يرجى التأكد من البيانات المدخلة';
 

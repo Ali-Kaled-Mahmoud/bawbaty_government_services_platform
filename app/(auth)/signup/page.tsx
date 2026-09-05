@@ -11,7 +11,6 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
   const [nationalId, setNationalId] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -37,7 +36,7 @@ export default function RegisterPage() {
     }
 
     if (!nationalId || nationalId.length < 10) {
-      setError("الرقم الوطني يجب أن يتكون من 10 أرقام على الأقل");
+      setError("الرقم الوطني يجب أن يتكون من 11 أرقام على الأقل");
       return;
     }
 
@@ -64,22 +63,21 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      // إرسال طلب إنشاء الحساب إلى خادم API (Next.js / Django)
-      const response = await fetch("/api/auth/register", {
+      // إرسال طلب إنشاء الحساب عبر API Route الخاص بـ Next.js
+      const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           full_name: fullName,
           national_id: nationalId,
           phone_number: phoneNumber,
-          email,
           password,
         }),
       });
 
-      // محاكاة استجابة الخادم في حال عدم ضبط الـ API بعد
-      if (!response.ok && response.status !== 404) {
-        const data = await response.json();
+      const data = await response.json();
+
+      if (!response.ok) {
         throw new Error(data.message || "حدث خطأ أثناء إنشاء الحساب");
       }
 
@@ -188,7 +186,7 @@ export default function RegisterPage() {
               />
             </div>
 
-            {/* الرقم الوطني ورقم الهاتف (صف واحد على الشاشات الكبيرة) */}
+            {/* الرقم الوطني ورقم الهاتف */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -197,12 +195,12 @@ export default function RegisterPage() {
                 <input
                   type="text"
                   required
-                  maxLength={12}
+                  maxLength={11}
                   value={nationalId}
                   onChange={(e) =>
                     setNationalId(e.target.value.replace(/\D/g, ""))
                   }
-                  placeholder="10 أرقام"
+                  placeholder="11 أرقام"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 text-sm transition-all"
                 />
               </div>
@@ -214,27 +212,13 @@ export default function RegisterPage() {
                 <input
                   type="tel"
                   required
+                  maxLength={10}
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  placeholder="05XXXXXXXX"
+                  placeholder="09XXXXXXXX"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 text-sm transition-all text-left dir-ltr"
                 />
               </div>
-            </div>
-
-            {/* البريد الإلكتروني (اختياري) */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                البريد الإلكتروني{" "}
-                <span className="text-slate-400 font-normal">(اختياري)</span>
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@example.com"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 text-sm transition-all text-left dir-ltr"
-              />
             </div>
 
             {/* كلمة المرور وتأكيدها */}
@@ -247,6 +231,7 @@ export default function RegisterPage() {
                   <input
                     type={showPassword ? "text" : "password"}
                     required
+                    minLength={8}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="8 خانات على الأقل"
@@ -270,6 +255,7 @@ export default function RegisterPage() {
                   <input
                     type={showConfirmPassword ? "text" : "password"}
                     required
+                    minLength={8}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="إعادة إدخال كلمة المرور"
@@ -328,7 +314,7 @@ export default function RegisterPage() {
             </button>
           </form>
 
-          {/* رابط تسجيل الدخول للمستخدمين الحاليين */}
+          {/* رابط تسجيل الدخول */}
           <div className="mt-6 pt-6 border-t border-slate-100 text-center">
             <p className="text-xs sm:text-sm text-slate-600">
               لديك حساب بالفعل في المنصة؟{" "}

@@ -1,9 +1,22 @@
-import Link from 'next/link';
+"use client";
+
+import { useState, useEffect } from "react";
+import Link from "next/link";
 
 const Hero = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // التحقق من التوكين لمعرفة ما إذا كان المستخدم مسجلاً لدخوله
+  useEffect(() => {
+    const token =
+      localStorage.getItem("access_token") || localStorage.getItem("token");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsLoggedIn(!!token);
+  }, []);
+
   return (
     <div>
-            {/* 1. قسم الترويسة الرئيسية (Hero Banner) مع الحفاظ على الهوية البصرية */}
+      {/* 1. قسم الترويسة الرئيسية (Hero Banner) مع الحفاظ على الهوية البصرية */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         <div className="bg-linear-to-r from-teal-800 to-teal-900 rounded-3xl p-6 sm:p-10 text-white shadow-xl relative overflow-hidden">
           
@@ -24,31 +37,33 @@ const Hero = () => {
 
             {/* الأزرار الرئيسية */}
             <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href="/register"
-                className="bg-amber-500 hover:bg-amber-600 text-slate-950 px-6 py-3 rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-2"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="lucide lucide-calendar-plus"
+              {!isLoggedIn && (
+                <Link
+                  href="/signup"
+                  className="bg-amber-500 hover:bg-amber-600 text-slate-950 px-6 py-3 rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-2"
                 >
-                  <path d="M21 13V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8" />
-                  <line x1="16" x2="16" y1="2" y2="6" />
-                  <line x1="8" x2="8" y1="2" y2="6" />
-                  <line x1="3" x2="21" y1="10" y2="10" />
-                  <line x1="19" x2="19" y1="16" y2="22" />
-                  <line x1="16" x2="22" y1="19" y2="19" />
-                </svg>
-                إنشاء حساب جديد
-              </Link>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="lucide lucide-calendar-plus"
+                  >
+                    <path d="M21 13V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8" />
+                    <line x1="16" x2="16" y1="2" y2="6" />
+                    <line x1="8" x2="8" y1="2" y2="6" />
+                    <line x1="3" x2="21" y1="10" y2="10" />
+                    <line x1="19" x2="19" y1="16" y2="22" />
+                    <line x1="16" x2="22" y1="19" y2="19" />
+                  </svg>
+                  إنشاء حساب جديد
+                </Link>
+              )}
 
               <Link
                 href="/services"
@@ -77,9 +92,8 @@ const Hero = () => {
           </svg>
         </div>
       </section>
-
     </div>
-  )
-}
+  );
+};
 
-export default Hero
+export default Hero;

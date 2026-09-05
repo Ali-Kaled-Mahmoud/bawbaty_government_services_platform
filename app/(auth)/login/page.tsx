@@ -4,32 +4,75 @@ import { useState, FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://bawbaty.onrender.com";
+
 export default function LoginPage() {
   const router = useRouter();
 
-  // حقول نموذج كلمة المرور
   const [nationalId, setNationalId] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // حالات المعالجة والأخطاء
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // التعامل مع تسجيل الدخول الرئيسي
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
 
     try {
-      // التوجيه للوحة التحكم أو الصفحة الرئيسية بعد النجاح
-      router.push("/services");
+      const response = await fetch(`${API_BASE_URL}/api/token/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          national_id: nationalId,
+          password: password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.detail ||
+            data.error ||
+            "فشل تسجيل الدخول. يرجى التأكد من صحة الرقم الوطني وكلمة المرور."
+        );
+      }
+
+      // 1. حفظ التوكينات
+      if (data.access) {
+        localStorage.setItem("access_token", data.access);
+        document.cookie = `access_token=${data.access}; path=/; max-age=86400;`;
+      }
+      if (data.refresh) {
+        localStorage.setItem("refresh_token", data.refresh);
+      }
+
+      // 2. حفظ بيانات المستخدم ونوعه
+      if (data.user) {
+        localStorage.setItem("user_info", JSON.stringify(data.user));
+        localStorage.setItem("user_role", data.user.role);
+
+        // 3. التوجيه بحسب نوع المستخدم والصلاحية
+        if (data.user.role === "admin") {
+          router.push("/statistics");
+        } else if (data.user.role === "employee") {
+          router.push("/dashboard");
+        } else {
+          router.push("/services");
+        }
+      } else {
+        router.push("/services");
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message);
+        setError("خطأ في كلمة المرور أو الرقم الوطني، يرجى المحاولة مرة أخرى");
       } else {
-        setError("حدث خطأ أثناء تسجيل الدخول، يرجى التأكد من البيانات");
+        setError("خطأ في كلمة المرور أو الرقم الوطني، يرجى المحاولة مرة أخرى");
       }
     } finally {
       setIsLoading(false);
@@ -38,10 +81,8 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 dir-rtl">
-      {/* الترويسة الرئيسية والترويس الحكومية */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-700 text-white shadow-lg shadow-emerald-700/20 mb-4">
-          {/* شعار حكومي مبسط */}
           <svg
             className="w-9 h-9"
             fill="none"
@@ -64,10 +105,8 @@ export default function LoginPage() {
         </p>
       </div>
 
-      {/* بطاقة نموذج تسجيل الدخول */}
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-6 shadow-xl shadow-slate-200/60 rounded-2xl border border-slate-100 sm:px-10">
-          {/* تنبيه الأخطاء */}
           {error && (
             <div className="mb-5 p-3.5 rounded-xl bg-red-50 border border-red-100 flex items-start gap-3 text-red-700 text-sm">
               <svg
@@ -87,22 +126,20 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* الدخول بواسطة الرقم الوطني وكلمة المرور */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">
                 الرقم الوطني / الهوية
               </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  required
-                  value={nationalId}
-                  onChange={(e) => setNationalId(e.target.value)}
-                  placeholder="أدخل الرقم الوطني المكون من 10 أرقام"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 text-sm transition-all"
-                />
-              </div>
+              <input
+                type="text"
+                required
+                maxLength={11}
+                value={nationalId}
+                onChange={(e) => setNationalId(e.target.value)}
+                placeholder="أدخل الرقم الوطني"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 text-sm transition-all"
+              />
             </div>
 
             <div>
@@ -113,9 +150,10 @@ export default function LoginPage() {
                 <input
                   type={showPassword ? "text" : "password"}
                   required
+                  minLength={8}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="••••••••••"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 text-sm transition-all pl-10"
                 />
                 <button
@@ -128,14 +166,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-xs sm:text-sm">
-              <label className="flex items-center text-slate-600 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="rounded border-slate-300 text-emerald-700 focus:ring-emerald-600 w-4 h-4"
-                />
-                <span className="mr-2">تذكر هذا الجهاز</span>
-              </label>
+            <div className="flex items-center justify-center text-xs sm:text-sm">
               <Link
                 href="/forgot-password"
                 className="text-emerald-700 hover:underline font-medium"
@@ -147,7 +178,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-sm shadow-md shadow-emerald-700/10 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 transition-all disabled:opacity-60 flex justify-center items-center gap-2"
+              className="w-full py-3 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-sm shadow-md shadow-emerald-700/10 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 transition-all disabled:opacity-60 flex justify-center items-center gap-2 cursor-pointer"
             >
               {isLoading && (
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -156,7 +187,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* رابط إنشاء حساب جديد */}
           <div className="mt-8 pt-6 border-t border-slate-100 text-center">
             <p className="text-xs sm:text-sm text-slate-600">
               ليس لديك حساب في المنصة؟{" "}
